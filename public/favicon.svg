@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- 背景 -->
+  <rect width="512" height="512" rx="116" fill="#080c14"/>
+  <!-- シアン枠線（外） -->
+  <rect width="512" height="512" rx="116" fill="none" stroke="#00f5ff" stroke-width="5" opacity="0.7"/>
+  <!-- シアン枠線（内） -->
+  <rect x="16" y="16" width="480" height="480" rx="102" fill="none" stroke="#00f5ff" stroke-width="1.5" opacity="0.2"/>
+
+  <!-- グリッド線 -->
+  <line x1="0" y1="171" x2="512" y2="171" stroke="#00f5ff" stroke-width="1" opacity="0.08"/>
+  <line x1="0" y1="341" x2="512" y2="341" stroke="#00f5ff" stroke-width="1" opacity="0.08"/>
+  <line x1="171" y1="0" x2="171" y2="512" stroke="#00f5ff" stroke-width="1" opacity="0.08"/>
+  <line x1="341" y1="0" x2="341" y2="512" stroke="#00f5ff" stroke-width="1" opacity="0.08"/>
+
+  <!-- メイン「2」 -->
+  <text x="256" y="256"
+    font-family="'JetBrains Mono', 'Courier New', monospace"
+    font-size="310" font-weight="900"
+    fill="#ffffff"
+    text-anchor="middle" dominant-baseline="central">2</text>
+
+  <!-- アンダーライン -->
+  <rect x="106" y="424" width="300" height="8" rx="4" fill="#00f5ff" opacity="0.8"/>
+
+  <!-- MOJI サブテキスト -->
+  <text x="412" y="488"
+    font-family="'JetBrains Mono', 'Courier New', monospace"
+    font-size="30" font-weight="700"
+    fill="#00f5ff" opacity="0.6"
+    text-anchor="end">MOJI</text>
+</svg>

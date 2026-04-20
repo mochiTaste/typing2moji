@@ -56,7 +56,7 @@ function stopBGM() {
 
 export default function Page() {
   const [phase, setPhase]         = useState<Phase>("waiting");
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [timeLeft, setTimeLeft]   = useState(GAME_DURATION);
   const [score, setScore]         = useState(0);
   const [word, setWord]           = useState<WordEntry>({ hiragana: "　", patterns: [""] });
@@ -99,32 +99,51 @@ export default function Page() {
   }, []);
 
   const startGame = useCallback(() => {
-    stopBGM(); // 前のゲームのBGMをリセット
+    stopBGM();
     usedRef.current = new Set();
     setScore(0); scoreRef.current = 0;
     setTimeLeft(GAME_DURATION);
-    setCountdown(3);
+    setCountdown(null);
     setPhase("countdown");
+
     // SEをプリロード
     ["/se_key.mp3","/se_clear.mp3","/se_miss.mp3","/se_count.mp3","/se_start.mp3","/se_result.mp3","/bgm.mp3"]
       .forEach(src => loadAudio(src));
-  }, []);
 
-  // カウントダウン
-  useEffect(() => {
-    if (phase !== "countdown") return;
-    if (countdown <= 0) {
+    // setTimeoutチェーンで音と表示を完全同期
+    // 1秒後：「3」表示 + 音
+    setTimeout(() => {
+      setCountdown(3);
+      playSound("/se_count.mp3", 0.6);
+    }, 1000);
+    // 2秒後：「2」表示 + 音
+    setTimeout(() => {
+      setCountdown(2);
+      playSound("/se_count.mp3", 0.6);
+    }, 1850);
+    // 3秒後：「1」表示 + 音
+    setTimeout(() => {
+      setCountdown(1);
+      playSound("/se_count.mp3", 0.6);
+    }, 2650);
+    // 3.65秒後：「スタート！」表示 + 音
+    setTimeout(() => {
+      setCountdown(0);
       playSound("/se_start.mp3", 0.8);
-      const t = setTimeout(() => {
-        nextWord();
-        setPhase("playing");
-        startBGM();
-      }, 650);
-      return () => clearTimeout(t);
-    }
-    playSound("/se_count.mp3", 0.6);
-    const t = setTimeout(() => setCountdown(c => c - 1), 900);
-    return () => clearTimeout(t);
+    }, 3500);
+    // 4.3秒後：ゲーム開始
+    setTimeout(() => {
+      nextWord();
+      setPhase("playing");
+      startBGM();
+    }, 4300);
+  }, [nextWord]);
+
+  // カウントダウン（setTimeoutチェーンで音と表示を完全同期）
+  useEffect(() => {
+    if (phase !== "countdown" || countdown === null) return;
+    // このuseEffectは初回（countdown===3セット時）のみ音を鳴らす役割
+    // 以降はstartGameのsetTimeoutチェーンが管理する
   }, [phase, countdown, nextWord]);
 
   // ゲームタイマー
@@ -352,7 +371,9 @@ export default function Page() {
       {/* ===== カウントダウン ===== */}
       {phase === "countdown" && (
         <div className="z-10 flex flex-col items-center">
-          {countdown > 0 ? (
+          {countdown === null ? (
+            <div /> // 1秒待機中は空表示
+          ) : countdown > 0 ? (
             <div key={`cd-${countdown}`} className="font-rounded font-black leading-none tabular-nums"
               style={{ fontSize: "clamp(8rem,22vw,14rem)", color: "#00f5ff",
                 textShadow: "0 0 40px #00f5ff, 0 0 80px rgba(0,245,255,0.5)",
