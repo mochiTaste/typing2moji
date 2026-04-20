@@ -12,6 +12,48 @@ let _pid = 0;
 const COLORS = ["#00f5ff", "#ff2d78", "#ffe620", "#39ff14", "#bf5fff"];
 const CHARS  = ["★", "✦", "◆", "●", "▲"];
 
+// ============================================================
+// 音声管理
+// ============================================================
+const audioCache: Record<string, HTMLAudioElement> = {};
+
+function loadAudio(src: string): HTMLAudioElement {
+  if (!audioCache[src]) {
+    audioCache[src] = new Audio(src);
+    audioCache[src].load();
+  }
+  return audioCache[src];
+}
+
+function playSound(src: string, volume = 1.0) {
+  try {
+    const base = loadAudio(src);
+    // 同じSEを連打できるようにclone
+    const audio = base.cloneNode() as HTMLAudioElement;
+    audio.volume = volume;
+    audio.play().catch(() => {});
+  } catch {}
+}
+
+let bgmAudio: HTMLAudioElement | null = null;
+
+function startBGM() {
+  if (!bgmAudio) {
+    bgmAudio = new Audio("/bgm.mp3");
+    bgmAudio.loop = true;
+    bgmAudio.volume = 0.35;
+  }
+  bgmAudio.currentTime = 0;
+  bgmAudio.play().catch(() => {});
+}
+
+function stopBGM() {
+  if (bgmAudio) {
+    bgmAudio.pause();
+    bgmAudio.currentTime = 0;
+  }
+}
+
 export default function Page() {
   const [phase, setPhase]         = useState<Phase>("waiting");
   const [countdown, setCountdown] = useState(3);
@@ -57,23 +99,30 @@ export default function Page() {
   }, []);
 
   const startGame = useCallback(() => {
-    usedRef.current = new Set(); // ゲーム開始時に使用済みリストをリセット
+    stopBGM(); // 前のゲームのBGMをリセット
+    usedRef.current = new Set();
     setScore(0); scoreRef.current = 0;
     setTimeLeft(GAME_DURATION);
     setCountdown(3);
     setPhase("countdown");
+    // SEをプリロード
+    ["/se_key.mp3","/se_clear.mp3","/se_miss.mp3","/se_count.mp3","/se_start.mp3","/se_result.mp3","/bgm.mp3"]
+      .forEach(src => loadAudio(src));
   }, []);
 
   // カウントダウン
   useEffect(() => {
     if (phase !== "countdown") return;
     if (countdown <= 0) {
+      playSound("/se_start.mp3", 0.8);
       const t = setTimeout(() => {
         nextWord();
         setPhase("playing");
+        startBGM();
       }, 650);
       return () => clearTimeout(t);
     }
+    playSound("/se_count.mp3", 0.6);
     const t = setTimeout(() => setCountdown(c => c - 1), 900);
     return () => clearTimeout(t);
   }, [phase, countdown, nextWord]);
@@ -85,6 +134,8 @@ export default function Page() {
       setTimeLeft(t => {
         if (t <= 1) {
           clearInterval(iv);
+          stopBGM();
+          playSound("/se_result.mp3", 0.8);
           setPhase("result");
           const s = scoreRef.current;
           setBest(prev => {
@@ -141,10 +192,14 @@ export default function Page() {
           if (nextTyped === currentLocked) {
             const s = scoreRef.current + 1;
             setScore(s); scoreRef.current = s;
+            playSound("/se_clear.mp3", 0.7);
             spawn();
             setTimeout(() => nextWord(currentWord.hiragana), 80);
+          } else {
+            playSound("/se_key.mp3", 0.5);
           }
         } else {
+          playSound("/se_miss.mp3", 0.5);
           setMiss(true);
           setTimeout(() => setMiss(false), 350);
         }
@@ -155,12 +210,17 @@ export default function Page() {
           if (matched.includes(nextTyped)) {
             const s = scoreRef.current + 1;
             setScore(s); scoreRef.current = s;
+            playSound("/se_clear.mp3", 0.7);
             spawn();
             setTimeout(() => nextWord(currentWord.hiragana), 80);
           } else if (matched.length === 1) {
             setLocked(matched[0]); lockedRef.current = matched[0];
+            playSound("/se_key.mp3", 0.5);
+          } else {
+            playSound("/se_key.mp3", 0.5);
           }
         } else {
+          playSound("/se_miss.mp3", 0.5);
           setMiss(true);
           setTimeout(() => setMiss(false), 350);
         }
