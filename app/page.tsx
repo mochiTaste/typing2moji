@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { pickRandom, WordEntry } from "@/components/wordData";
 
 type Phase = "waiting" | "countdown" | "playing" | "result";
@@ -65,7 +65,11 @@ export default function Page() {
   const [miss, setMiss]           = useState(false);
   const [cleared, setCleared]     = useState(false);
   const [particles, setParticles] = useState<Particle[]>([]);
-  const [best, setBest]           = useState(0);
+  const [best, setBest]           = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    const b = localStorage.getItem("futamoji-best");
+    return b ? parseInt(b) : 0;
+  });
 
   const wordBoxRef  = useRef<HTMLDivElement>(null);
   const phaseRef    = useRef<Phase>("waiting");
@@ -75,16 +79,13 @@ export default function Page() {
   const scoreRef    = useRef(0);
   const usedRef     = useRef<Set<string>>(new Set()); // 今ゲームで出た単語
 
-  phaseRef.current  = phase;
-  wordRef.current   = word;
-  typedRef.current  = typed;
-  lockedRef.current = locked;
-  scoreRef.current  = score;
-
-  useEffect(() => {
-    const b = localStorage.getItem("futamoji-best");
-    if (b) setBest(parseInt(b));
-  }, []);
+  useLayoutEffect(() => {
+    phaseRef.current  = phase;
+    wordRef.current   = word;
+    typedRef.current  = typed;
+    lockedRef.current = locked;
+    scoreRef.current  = score;
+  });
 
   const nextWord = useCallback((prevHiragana?: string) => {
     // 使用済みセットに前の単語を追加
@@ -189,6 +190,14 @@ export default function Page() {
   // キー入力
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (e.code === "Escape") {
+        e.preventDefault();
+        if (phaseRef.current === "playing" || phaseRef.current === "countdown") {
+          stopBGM();
+          setPhase("waiting");
+        }
+        return;
+      }
       if (e.code === "Space") {
         e.preventDefault();
         if (phaseRef.current === "waiting" || phaseRef.current === "result") {
@@ -485,6 +494,13 @@ export default function Page() {
             {typed || <span style={{ color: "rgba(255,255,255,0.15)", textTransform: "none" }}>─</span>}
             <span style={{ color: "#00f5ff", animation: "blink 1.2s ease-in-out infinite" }}>▌</span>
           </div>
+
+          <p className="font-rounded" style={{ color: "rgba(255,255,255,0.15)", fontSize: 11 }}>
+            <kbd style={{ padding: "2px 6px", border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: 4, background: "rgba(255,255,255,0.04)",
+              fontFamily: "monospace", color: "rgba(255,255,255,0.2)" }}>Esc</kbd>
+            　でやめる
+          </p>
         </div>
       )}
 
